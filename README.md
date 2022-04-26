@@ -55,6 +55,14 @@ Running the robot on Gazebo:
 - publish command velocities in a different terminal as follows:
   - rostopic pub /cmd_vel geometry_msgs/Twist  '{linear:  {x: 0.1, y: 0.0, z: 0.0}, angular: {x: 0.0,y: 0.0,z: 0.0}}' 
 
+Teleoperation (Manual Keyboard Controls)
+- rosrun teleop_twist_keyboard teleop_twist_keyboard.py cmd_vel:=/iRobot_0/cmd_vel
+- Type x to reduce speed
+- Make sure speed is reasonable before starting (changing speed also triggers a small movement)
+- Use "i" to move forwards, "<" to move backwards, "l" to rotate clockwise, and "j" to rotate anti-clockwise
+- There also buttons for moving in an arc
+- Pressing the button once causes a jolt but holding the button will cause continuous motion
+
 Bugs - if you don't have catkin_make installed:
 sudo apt-get install ros-melodic-catkin python-catkin-tools
 
