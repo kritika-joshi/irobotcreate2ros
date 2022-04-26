@@ -45,6 +45,9 @@ def arrow_direc(img, arrow_pts):
         x_list = arrow_coords[::2]
         y_list = arrow_coords[1::2]
 
+        #print(x_list)
+        #print(y_list)
+
         xmax = np.max(x_list)
         xmin = np.min(x_list)
         ymax = np.max(y_list)
@@ -52,9 +55,10 @@ def arrow_direc(img, arrow_pts):
 
         if (xmin, ymax) in arrow_pts:
             return 'RIGHT'
-
+        elif (xmax, ymax) in arrow_pts:
+            return 'LEFT'
         else:
-            return 'LEFT' 
+            return 'IDK!' 
 
 def blue_detec(imageFrame):
     # Convert the imageFrame in 
@@ -90,7 +94,7 @@ def blue_detec(imageFrame):
     box_dims = []
     for pic, contour in enumerate(contours):
         area = cv2.contourArea(contour)
-        if(area > 1000):
+        if(area > 50000):
             x, y, w, h = cv2.boundingRect(contour)
             imageFrame = cv2.rectangle(imageFrame, (x, y),
                                        (x + w, y + h),
@@ -102,11 +106,11 @@ def blue_detec(imageFrame):
 
 def aprildec(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    print("[INFO] detecting AprilTags...")
+    #print("[INFO] detecting AprilTags...")
     options = apriltag.DetectorOptions(families="tag36h11")
     detector = apriltag.Detector(options)
     results = detector.detect(gray)
-    print("[INFO] {} total AprilTags detected".format(len(results)))
+    #print("[INFO] {} total AprilTags detected".format(len(results)))
     
     for r in results:
         # extract the bounding box (x, y)-coordinates for the AprilTag
@@ -127,9 +131,11 @@ def aprildec(image):
         # draw the tag family on the image
         tagFamily = r.tag_family.decode("utf-8")
         cv2.putText(image, tagFamily, (ptA[0], ptA[1] - 15),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        print("[INFO] tag family: {}".format(tagFamily))
+        #print("[INFO] tag family: {}".format(tagFamily))
 
 def main():
+
+    listTurns = []
     cap = cv2.VideoCapture(2)
 
     # Check if the webcam is opened correctly
@@ -138,7 +144,10 @@ def main():
 
     while True:
         ret, frame = cap.read()
-        
+
+        # Apriltag detection
+        taginfo = aprildec(frame) #returing nothing at the moment
+
         # Arrow detection
         blue_area, blue_bbox_dims = blue_detec(frame)
         
@@ -149,15 +158,33 @@ def main():
             
         arrow_finding, arrow_pts = arrow_outline(frame)
         direc = arrow_direc(arrow_finding, arrow_pts)
-        
+
+        numturn = 0
+        direction = 'IDK!'
         org = (50, 50)        
         if blue is True and direc !='NONE' and direc !='IDK':
-            cv2.putText(arrow_finding, direc, org, cv2.FONT_HERSHEY_SIMPLEX, fontScale = 1,color = (0, 0, 0), 
+            
+            if direc == 'RIGHT':
+                numturn = 20
+            elif direc == 'LEFT':
+                numturn = -20
+            listTurns.append(numturn)
+            average = sum(listTurns[-50:])/50
+
+            if average < 0:
+                direction = 'LEFT'
+            elif average > 0:
+                direction = 'RIGHT'
+
+            #print(listTurns)
+            cv2.putText(arrow_finding, direction, org, cv2.FONT_HERSHEY_SIMPLEX, fontScale = 1,color = (0, 0, 0), 
                         thickness = 2 )
         
-        # Apriltag detection
-        taginfo = aprildec(frame) #returing nothing at the moment
         
+        for item in (blue_bbox_dims):
+            x, y, w, h = item
+            imageFrame = cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
         # Show camera feed
         cv2.imshow('Annotated Feed', frame)
                 
